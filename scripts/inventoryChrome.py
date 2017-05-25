@@ -59,6 +59,8 @@ for p in range(1, pages+1):
 		itemLink = t.find('div', class_='item-list__name').find('a', href=True)['href']
 		itemNameAndQuantity = t.find('div', class_='item-list__name').find('a', href=True).get_text().replace('\n', '').replace('\t', '')
 		retainerName = t.find('div', 'item-list__cell--md').find('a', href=True).get_text()
+		
+		# replace this with the inventory slot data from Mobile Mode
 		retainerLink = t.find('div', 'item-list__cell--md').find('a', href=True)['href']
 
 		itemId = re.search(r'(\/)(\w+)(\/$)', itemLink).group(0).replace('/', '')
@@ -70,7 +72,7 @@ for p in range(1, pages+1):
 			'name': itemName,
 			'quantity': itemQuantity,
 			'retainer': retainerName,
-			'invLink': retainerLink
+			'slot': 0
 		})
 
 # print(data)
