@@ -25,24 +25,31 @@ preferences = {
 chrome_options.add_experimental_option('prefs', preferences)
 driver = webdriver.Chrome('drivers/chromedriver.exe', chrome_options=chrome_options)
 driver.set_window_size(1024, 768)
-pages = 25 #change this to get pages number dynamically, not really needed though
-data = {}
 
 driver.get('http://na.finalfantasyxiv.com/lodestone/account/login/')
 
 while('my' not in driver.current_url):
 	sleep(5)
 
-# replace the character id with a dynamically parsed id after logging in and choosing the character
-characterId = str(4348521)
-data['4348521'] = []
+data = {}
+data['inventory'] = []
+itemCount = 0
+characterId = 0
+
+driver.get('http://na.finalfantasyxiv.com/lodestone/character/4348521/item/')
+page = BeautifulSoup(driver.page_source, 'lxml')
+pages = int(re.search(r'(\d+)$', page.find('li', class_='btn__pager__current').get_text()).group(0))
+print('Number of pages set to ' + str(pages))
+
+if (characterId < 1):
+	characterId = str(re.search(r'(\/)(\d+)(\/)', driver.current_url).group(0).replace('/', ''))
+	print('Character ID set to ' + characterId)
 
 for p in range(1, pages+1):
 	# Mobile Mode URL
 	# driver.get('http://na.finalfantasyxiv.com/lodestone/character/4348521/item/more/?category1=&q=&hq=&page='+ str(p))
 
 	driver.get('http://na.finalfantasyxiv.com/lodestone/character/4348521/item/?q=&category1=&hq=&page='+ str(p))
-
 	page = BeautifulSoup(driver.page_source, 'lxml')
 
 	# Loop for Mobile Mode
@@ -56,6 +63,7 @@ for p in range(1, pages+1):
 
 	for t in page.findAll('li', 'item-list__list'):
 
+		itemCount += 1
 		itemLink = t.find('div', class_='item-list__name').find('a', href=True)['href']
 		itemNameAndQuantity = t.find('div', class_='item-list__name').find('a', href=True).get_text().replace('\n', '').replace('\t', '')
 		retainerName = t.find('div', 'item-list__cell--md').find('a', href=True).get_text()
@@ -67,17 +75,19 @@ for p in range(1, pages+1):
 		itemQuantity = int(re.search(r'(\()(\d?)(,?)(\d+)(\)$)', itemNameAndQuantity).group(0).replace('(', '').replace(')', '').replace(',', ''))
 		itemName = re.sub(r'(\()(\d+)(\)$)', '', itemNameAndQuantity)
 
-		data['4348521'].append({
+		data['inventory'].append({
 			'id': itemId,
 			'name': itemName,
 			'quantity': itemQuantity,
 			'retainer': retainerName,
 			'slot': 0
 		})
+		print('Added item named ' + itemName)
 
 # print(data)
 
-with open('inventory_'+ characterId +'.json', 'w') as output:  
+with open('inventory_'+ str(characterId) +'.json', 'w') as output:  
     json.dump(data, output, sort_keys=True, indent=4,  ensure_ascii=False)
+    print('Updated inventory_' + str(characterId) + '.json with ' + str(itemCount) + ' entries')
 
 driver.quit()
