@@ -36,20 +36,23 @@ data['inventory'] = []
 itemCount = 0
 characterId = 0
 
-driver.get('http://na.finalfantasyxiv.com/lodestone/character/4348521/item/')
+page = BeautifulSoup(driver.page_source, 'lxml')
+linkToCharacterProfile = page.find('div', class_='heading--side').find('a', class_='heading--side__icon')['href']
+
+if (characterId < 1):
+	characterId = str(re.search(r'(\/)(\d+)(\/)', linkToCharacterProfile).group(0).replace('/', ''))
+	print('Character ID set to ' + characterId)
+
+driver.get('http://na.finalfantasyxiv.com/lodestone/character/' + characterId + '/item/')
 page = BeautifulSoup(driver.page_source, 'lxml')
 pages = int(re.search(r'(\d+)$', page.find('li', class_='btn__pager__current').get_text()).group(0))
 print('Number of pages set to ' + str(pages))
-
-if (characterId < 1):
-	characterId = str(re.search(r'(\/)(\d+)(\/)', driver.current_url).group(0).replace('/', ''))
-	print('Character ID set to ' + characterId)
 
 for p in range(1, pages+1):
 	# Mobile Mode URL
 	# driver.get('http://na.finalfantasyxiv.com/lodestone/character/4348521/item/more/?category1=&q=&hq=&page='+ str(p))
 
-	driver.get('http://na.finalfantasyxiv.com/lodestone/character/4348521/item/?q=&category1=&hq=&page='+ str(p))
+	driver.get('http://na.finalfantasyxiv.com/lodestone/character/' + characterId + '/item/?q=&category1=&hq=&page='+ str(p))
 	page = BeautifulSoup(driver.page_source, 'lxml')
 
 	# Loop for Mobile Mode
@@ -72,13 +75,17 @@ for p in range(1, pages+1):
 		retainerLink = t.find('div', 'item-list__cell--md').find('a', href=True)['href']
 
 		itemId = re.search(r'(\/)(\w+)(\/$)', itemLink).group(0).replace('/', '')
-		itemQuantity = int(re.search(r'(\()(\d?)(,?)(\d+)(\)$)', itemNameAndQuantity).group(0).replace('(', '').replace(')', '').replace(',', ''))
 		itemName = re.sub(r'(\()(\d+)(\)$)', '', itemNameAndQuantity)
-
+		itemQuantity = int(re.search(r'(\()(\d?)(,?)(\d+)(\)$)', itemNameAndQuantity).group(0).replace('(', '').replace(')', '').replace(',', ''))
+		highQualityFlag = 0
+		if (t.find('img', class_='ic_item_quality')):
+			highQualityFlag = 1
+		
 		data['inventory'].append({
 			'id': itemId,
 			'name': itemName,
 			'quantity': itemQuantity,
+			'hq': highQualityFlag,
 			'retainer': retainerName,
 			'slot': 0
 		})
